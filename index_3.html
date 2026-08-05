@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HERO — Orden de Trabajo Post Venta</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #111c30;
+    --panel-2: #0f1728;
+    --border: #223250;
+    --text: #eef2f8;
+    --muted: #93a2ba;
+    --red: #e2231a;
+    --red-dark: #b91b14;
+    --accent: #ffb020;
+    --ok: #1f9d63;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo {
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: 1px;
+    color: var(--red);
+  }
+  .logo span { color: var(--text); font-weight: 600; font-size: 0.85rem; display: block; letter-spacing: 0.5px; }
+
+  main { max-width: 640px; margin: 0 auto; padding: 18px 16px 60px; }
+
+  .hero-banner {
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+    border-radius: 14px;
+    padding: 22px 20px;
+    margin-bottom: 18px;
+    text-align: center;
+  }
+  .hero-banner h1 { margin: 0; font-size: 1.3rem; }
+  .hero-banner p { margin: 6px 0 0; font-size: 0.85rem; opacity: 0.9; }
+
+  .steps {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .step-pill {
+    flex: 1;
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .step-pill.active { background: var(--red); color: white; border-color: var(--red); }
+  .step-pill.done { background: var(--ok); color: white; border-color: var(--ok); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 18px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 1rem;
+    margin: 0 0 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h2 .req { color: var(--red); margin-left: auto; font-size: 1rem; }
+
+  label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 14px 0 6px;
+    color: var(--text);
+  }
+  label .req { color: var(--red); }
+  .hint { color: var(--muted); font-size: 0.78rem; margin-top: -2px; margin-bottom: 6px; }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    background: var(--panel-2);
+    color: var(--text);
+  }
+  input::placeholder, textarea::placeholder { color: #5b6b85; }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--red);
+    box-shadow: 0 0 0 3px rgba(226, 35, 26, 0.18);
+  }
+  input:disabled { opacity: 0.7; }
+  textarea { min-height: 90px; resize: vertical; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  .fuel-options { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .fuel-btn {
+    flex: 1;
+    min-width: 60px;
+    padding: 10px 6px;
+    text-align: center;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--panel-2);
+    color: var(--text);
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+  .fuel-btn.active { background: var(--accent); color: #1c1200; border-color: var(--accent); font-weight: 700; }
+
+  .photo-drop {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 22px 14px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .photo-drop:hover { border-color: var(--red); }
+  .thumbs { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .thumb { position: relative; width: 84px; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb button {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,0.65); color: white; border: none;
+    width: 20px; height: 20px; border-radius: 50%; font-size: 0.75rem; cursor: pointer; line-height: 1;
+  }
+
+  canvas#sigPad {
+    width: 100%;
+    height: 180px;
+    background: var(--panel-2);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    touch-action: none;
+    display: block;
+  }
+  .sig-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .link-btn { background: none; border: none; color: var(--accent); font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+
+  .nav-row { display: flex; gap: 10px; margin-top: 6px; }
+  button.primary, button.secondary {
+    flex: 1;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+  }
+  button.primary { background: var(--red); color: white; }
+  button.primary:hover { background: var(--red-dark); }
+  button.primary:disabled { background: #6d3a37; cursor: not-allowed; }
+  button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+
+  .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; }
+  .checkbox-row input { width: auto; margin-top: 3px; }
+  .checkbox-row p { margin: 0; font-size: 0.8rem; color: var(--muted); }
+
+  .msg {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    display: none;
+  }
+  .msg.success { background: #123a2a; color: #7be3ab; display: block; }
+  .msg.error { background: #3a1616; color: #ff9d9d; display: block; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">HERO<span>Post Venta — Orden de Trabajo</span></div>
+</header>
+
+<main>
+  <div class="hero-banner">
+    <h1>HERO APP POST VENTA</h1>
+    <p>Registro de ingreso, inspección y mantenimiento de motocicletas</p>
+  </div>
+
+  <div class="steps">
+    <div class="step-pill active" id="pill-1">👤 Cliente / Moto</div>
+    <div class="step-pill" id="pill-2">🏍️ Inspección</div>
+    <div class="step-pill" id="pill-3">🔧 Mantenimiento</div>
+  </div>
+
+  <form id="otForm">
+
+    <!-- PÁGINA 1 -->
+    <section class="page active" id="page-1">
+      <div class="card">
+        <h2>🏢 Centro y Orden <span class="req">*</span></h2>
+        <label>Centro de Servicio Autorizado <span class="req">*</span></label>
+        <select id="centro" required></select>
+
+        <label>Número de Orden de Trabajo <span class="req">*</span></label>
+        <input type="text" id="numeroOT" required>
+        <p class="hint">Generado automáticamente. Puedes editarlo si tu taller usa otro formato.</p>
+      </div>
+
+      <div class="card">
+        <h2>👤 Datos del Cliente <span class="req">*</span></h2>
+        <label>Nombres y Apellidos <span class="req">*</span></label>
+        <input type="text" id="clienteNombre" placeholder="Ej. Juan Carlos Pérez" required>
+
+        <div class="row2">
+          <div>
+            <label>Cédula o RUC <span class="req">*</span></label>
+            <input type="text" id="clienteCedula" placeholder="1712345678" required>
+          </div>
+          <div>
+            <label>Teléfono (WhatsApp) <span class="req">*</span></label>
+            <input type="tel" id="clienteTelefono" placeholder="0998765432" required>
+          </div>
+        </div>
+
+        <label>Correo Electrónico</label>
+        <input type="email" id="clienteCorreo" placeholder="cliente@gmail.com">
+
+        <label>Dirección <span class="req">*</span></label>
+        <input type="text" id="clienteDireccion" placeholder="Av. América y Colón, Quito" required>
+      </div>
+
+      <div class="card">
+        <h2>🏍️ Datos de la Moto <span class="req">*</span></h2>
+        <div class="row2">
+          <div>
+            <label>Marca</label>
+            <input type="text" id="motoMarca" value="Hero" disabled>
+          </div>
+          <div>
+            <label>Modelo <span class="req">*</span></label>
+            <select id="motoModelo" required></select>
+          </div>
+        </div>
+
+        <div class="row3">
+          <div>
+            <label>Año</label>
+            <input type="number" id="motoAnio" placeholder="2026">
+          </div>
+          <div>
+            <label>Placa <span class="req">*</span></label>
+            <input type="text" id="motoPlaca" placeholder="PBA-1234" required>
+          </div>
+          <div>
+            <label>Km Ingreso</label>
+            <input type="number" id="motoKm" placeholder="45000">
+          </div>
+        </div>
+
+        <label>Chasis / VIN</label>
+        <input type="text" id="motoChasis" placeholder="N° chasis / motor">
+      </div>
+
+      <div class="nav-row">
+        <button type="button" class="primary" onclick="goToPage(2)">Siguiente →</button>
+      </div>
+    </section>
+
+    <!-- PÁGINA 2 -->
+    <section class="page" id="page-2">
+      <div class="card">
+        <h2>⛽ Nivel de Combustible</h2>
+        <input type="hidden" id="combustible" value="1/2">
+        <div class="fuel-options" id="fuelOptions">
+          <div class="fuel-btn" data-val="Vacío">Vacío</div>
+          <div class="fuel-btn" data-val="1/4">1/4</div>
+          <div class="fuel-btn active" data-val="1/2">1/2</div>
+          <div class="fuel-btn" data-val="3/4">3/4</div>
+          <div class="fuel-btn" data-val="Lleno">Lleno</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>📷 Fotos de la Motocicleta <span class="req">*</span></h2>
+        <p class="hint">Sube mínimo 3 fotos desde la galería del celular (frontal, lateral, posterior, daños, etc.)</p>
+        <label class="photo-drop" for="fotoInput">➕ Tocar para elegir fotos de la galería</label>
+        <input type="file" id="fotoInput" accept="image/*" multiple style="display:none">
+        <div class="thumbs" id="thumbs"></div>
+      </div>
+
+      <div class="nav-row">
+        <button type="button" class="secondary" onclick="goToPage(1)">← Atrás</button>
+        <button type="button" class="primary" onclick="validatePage2AndGo(3)">Siguiente →</button>
+      </div>
+    </section>
+
+    <!-- PÁGINA 3 -->
+    <section class="page" id="page-3">
+      <div class="card">
+        <h2>📝 Detalle Mantenimiento Solicitado <span class="req">*</span></h2>
+        <select id="mantenimientoTipo" required></select>
+
+        <label>Observaciones de Trabajo</label>
+        <textarea id="observaciones" placeholder="Novedades, diagnóstico, repuestos usados..."></textarea>
+      </div>
+
+      <div class="card">
+        <h2>✍️ Firma del Cliente (Recepción y Autorización) <span class="req">*</span></h2>
+        <canvas id="sigPad"></canvas>
+        <div class="sig-actions">
+          <button type="button" class="link-btn" onclick="clearSignature()">🗑️ Limpiar firma</button>
+        </div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="autorizacion" required>
+          <p>El cliente declara que los datos expuestos y la inspección visual corresponden exactamente al estado en que se entrega la motocicleta al centro de servicio HERO. Autorizo el tratamiento de mis datos personales para fines de gestión del servicio.</p>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button type="button" class="secondary" onclick="goToPage(2)">← Atrás</button>
+        <button type="submit" class="primary" id="submitBtn">💾 Guardar Orden de Trabajo</button>
+      </div>
+
+      <div class="msg" id="msgBox"></div>
+    </section>
+
+  </form>
+</main>
+
+<script>
+  /* ======= CONFIGURACIÓN ======= */
+
+  // 1) Pega aquí la URL de tu Web App de Google Apps Script (ver GUIA_DESPLIEGUE.md)
+  const SCRIPT_URL = "https://script.google.com/a/macros/heroecuador.com/s/AKfycbyP4Lj-cmqzzHxFEMLZnJj_--Sqi-y6xyCGo6A_KLsBiOsgzTyKASxvj2Xo01JDjhta/exec";
+
+  // 2) TODO: reemplazar con la lista real de centros de servicio autorizados
+  const CENTROS_SERVICIO = [
+    "Centro Norte",
+    "Centro Sur",
+    "Centro Valle"
+  ];
+
+  // 3) TODO: reemplazar con la lista real de modelos Hero
+  const MODELOS_HERO = [
+    "Hunk 150",
+    "Splendor Plus",
+    "Glamour 125",
+    "Xtreme 160R",
+    "Karizma XMR"
+  ];
+
+  const TIPOS_MANTENIMIENTO = [
+    "Arranque Inicial",
+    "Garantía",
+    "Mantenimiento 500kms",
+    "Mantenimiento 3000kms",
+    "Mantenimiento 6000kms",
+    "Mantenimiento 9000kms",
+    "Mantenimiento 12000km"
+  ];
+
+  const MIN_FOTOS = 3;
+  const MAX_IMG_WIDTH = 1280;
+  const JPEG_QUALITY = 0.7;
+
+  /* ======= INICIALIZACIÓN DE SELECTS ======= */
+
+  function fillSelect(id, options, placeholder) {
+    const el = document.getElementById(id);
+    el.innerHTML = "";
+    const optPlaceholder = document.createElement("option");
+    optPlaceholder.value = "";
+    optPlaceholder.textContent = placeholder;
+    optPlaceholder.disabled = true;
+    optPlaceholder.selected = true;
+    el.appendChild(optPlaceholder);
+    options.forEach(function (opt) {
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = opt;
+      el.appendChild(o);
+    });
+  }
+
+  fillSelect("centro", CENTROS_SERVICIO, "Selecciona un centro de servicio");
+  fillSelect("motoModelo", MODELOS_HERO, "Selecciona el modelo");
+  fillSelect("mantenimientoTipo", TIPOS_MANTENIMIENTO, "Selecciona el tipo de mantenimiento");
+
+  // Número de OT autogenerado (editable)
+  (function generarNumeroOT() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const rand = String(Math.floor(Math.random() * 9000) + 1000);
+    document.getElementById("numeroOT").value = "OT-" + yyyy + mm + dd + "-" + rand;
+  })();
+
+  /* ======= NAVEGACIÓN ENTRE PÁGINAS ======= */
+
+  let currentPage = 1;
+
+  function goToPage(n) {
+    if (n === 2 && !validatePage1()) return;
+    document.querySelectorAll(".page").forEach(function (p) { p.classList.remove("active"); });
+    document.getElementById("page-" + n).classList.add("active");
+    for (let i = 1; i <= 3; i++) {
+      const pill = document.getElementById("pill-" + i);
+      pill.classList.remove("active", "done");
+      if (i < n) pill.classList.add("done");
+      if (i === n) pill.classList.add("active");
+    }
+    currentPage = n;
+    if (n === 3) resizeCanvas(); // el lienzo de firma solo se puede medir cuando ya es visible
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function validatePage1() {
+    const required = ["centro", "numeroOT", "clienteNombre", "clienteCedula", "clienteTelefono", "clienteDireccion", "motoModelo", "motoPlaca"];
+    for (const id of required) {
+      const el = document.getElementById(id);
+      if (!el.value) {
+        alert("Por favor completa todos los campos obligatorios (*) antes de continuar.");
+        el.focus();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function validatePage2AndGo(n) {
+    if (fotosBase64.length < MIN_FOTOS) {
+      alert("Debes subir al menos " + MIN_FOTOS + " fotos de la motocicleta.");
+      return;
+    }
+    goToPage(n);
+  }
+
+  /* ======= NIVEL DE COMBUSTIBLE ======= */
+
+  document.getElementById("fuelOptions").addEventListener("click", function (e) {
+    const btn = e.target.closest(".fuel-btn");
+    if (!btn) return;
+    document.querySelectorAll(".fuel-btn").forEach(function (b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    document.getElementById("combustible").value = btn.dataset.val;
+  });
+
+  /* ======= FOTOS (con compresión) ======= */
+
+  let fotosBase64 = []; // { nombre, base64 }
+
+  function resizeAndEncode(file) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function (ev) {
+        const img = new Image();
+        img.onload = function () {
+          let w = img.width, h = img.height;
+          if (w > MAX_IMG_WIDTH) {
+            h = Math.round(h * (MAX_IMG_WIDTH / w));
+            w = MAX_IMG_WIDTH;
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", JPEG_QUALITY));
+        };
+        img.onerror = reject;
+        img.src = ev.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderThumbs() {
+    const box = document.getElementById("thumbs");
+    box.innerHTML = "";
+    fotosBase64.forEach(function (foto, idx) {
+      const div = document.createElement("div");
+      div.className = "thumb";
+      const img = document.createElement("img");
+      img.src = foto.base64;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "✕";
+      btn.onclick = function () {
+        fotosBase64.splice(idx, 1);
+        renderThumbs();
+      };
+      div.appendChild(img);
+      div.appendChild(btn);
+      box.appendChild(div);
+    });
+  }
+
+  document.getElementById("fotoInput").addEventListener("change", function (e) {
+    const files = Array.from(e.target.files || []);
+    Promise.all(files.map(function (f, i) {
+      return resizeAndEncode(f).then(function (b64) {
+        fotosBase64.push({ nombre: "foto_" + Date.now() + "_" + i + ".jpg", base64: b64 });
+      });
+    })).then(renderThumbs);
+    e.target.value = "";
+  });
+
+  /* ======= FIRMA (canvas táctil) ======= */
+
+  const sigCanvas = document.getElementById("sigPad");
+  const sigCtx = sigCanvas.getContext("2d");
+  let drawing = false;
+  let sigHasContent = false;
+
+  function resizeCanvas() {
+    // Si la página 3 todavía está oculta (display:none), el canvas mide 0x0 —
+    // no lo redimensionamos en ese caso porque borraría lo dibujado sin motivo
+    // y dejaría el lienzo inutilizable al mostrarlo después.
+    if (sigCanvas.offsetParent === null && !sigCanvas.getBoundingClientRect().width) return;
+    const ratio = window.devicePixelRatio || 1;
+    const rect = sigCanvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    sigCanvas.width = rect.width * ratio;
+    sigCanvas.height = rect.height * ratio;
+    sigCtx.scale(ratio, ratio);
+    sigCtx.strokeStyle = "#eef2f8";
+    sigCtx.lineWidth = 2.2;
+    sigCtx.lineCap = "round";
+  }
+  window.addEventListener("resize", resizeCanvas);
+
+  function getPos(e) {
+    const rect = sigCanvas.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    return { x: point.clientX - rect.left, y: point.clientY - rect.top };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    drawing = true;
+    sigHasContent = true;
+    const p = getPos(e);
+    sigCtx.beginPath();
+    sigCtx.moveTo(p.x, p.y);
+  }
+  function moveDraw(e) {
+    if (!drawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    sigCtx.lineTo(p.x, p.y);
+    sigCtx.stroke();
+  }
+  function endDraw() { drawing = false; }
+
+  sigCanvas.addEventListener("mousedown", startDraw);
+  sigCanvas.addEventListener("mousemove", moveDraw);
+  sigCanvas.addEventListener("mouseup", endDraw);
+  sigCanvas.addEventListener("mouseleave", endDraw);
+  sigCanvas.addEventListener("touchstart", startDraw, { passive: false });
+  sigCanvas.addEventListener("touchmove", moveDraw, { passive: false });
+  sigCanvas.addEventListener("touchend", endDraw);
+
+  function clearSignature() {
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+    sigHasContent = false;
+  }
+
+  /* ======= ENVÍO DEL FORMULARIO ======= */
+
+  const form = document.getElementById("otForm");
+  const submitBtn = document.getElementById("submitBtn");
+  const msgBox = document.getElementById("msgBox");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    msgBox.className = "msg";
+    msgBox.textContent = "";
+
+    if (!document.getElementById("mantenimientoTipo").value) {
+      alert("Selecciona el tipo de mantenimiento solicitado.");
+      return;
+    }
+    if (!sigHasContent) {
+      alert("Falta la firma del cliente.");
+      return;
+    }
+    if (!document.getElementById("autorizacion").checked) {
+      alert("El cliente debe aceptar la autorización antes de guardar.");
+      return;
+    }
+    if (SCRIPT_URL.includes("PEGA_AQUI")) {
+      msgBox.className = "msg error";
+      msgBox.textContent = "Falta configurar la URL del Apps Script en index.html. Revisa la guía de despliegue.";
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Guardando...";
+
+    const data = new FormData();
+    data.append("centro", document.getElementById("centro").value);
+    data.append("numeroOT", document.getElementById("numeroOT").value);
+    data.append("clienteNombre", document.getElementById("clienteNombre").value);
+    data.append("clienteCedula", document.getElementById("clienteCedula").value);
+    data.append("clienteTelefono", document.getElementById("clienteTelefono").value);
+    data.append("clienteCorreo", document.getElementById("clienteCorreo").value);
+    data.append("clienteDireccion", document.getElementById("clienteDireccion").value);
+    data.append("motoMarca", document.getElementById("motoMarca").value);
+    data.append("motoModelo", document.getElementById("motoModelo").value);
+    data.append("motoAnio", document.getElementById("motoAnio").value);
+    data.append("motoPlaca", document.getElementById("motoPlaca").value);
+    data.append("motoKm", document.getElementById("motoKm").value);
+    data.append("motoChasis", document.getElementById("motoChasis").value);
+    data.append("combustible", document.getElementById("combustible").value);
+    data.append("mantenimientoTipo", document.getElementById("mantenimientoTipo").value);
+    data.append("observaciones", document.getElementById("observaciones").value);
+
+    fotosBase64.forEach(function (foto, idx) {
+      data.append("foto" + (idx + 1) + "_nombre", foto.nombre);
+      data.append("foto" + (idx + 1) + "_base64", foto.base64);
+    });
+    data.append("totalFotos", String(fotosBase64.length));
+    data.append("firma_base64", sigCanvas.toDataURL("image/png"));
+
+    fetch(SCRIPT_URL, {
+      method: "POST",
+      body: data,
+      mode: "no-cors"
+    })
+      .then(function () {
+        msgBox.className = "msg success";
+        msgBox.textContent = "¡Orden de trabajo guardada correctamente!";
+        form.reset();
+        fotosBase64 = [];
+        renderThumbs();
+        clearSignature();
+        fillSelect("centro", CENTROS_SERVICIO, "Selecciona un centro de servicio");
+        fillSelect("motoModelo", MODELOS_HERO, "Selecciona el modelo");
+        fillSelect("mantenimientoTipo", TIPOS_MANTENIMIENTO, "Selecciona el tipo de mantenimiento");
+        document.getElementById("motoMarca").value = "Hero";
+        goToPage(1);
+      })
+      .catch(function () {
+        msgBox.className = "msg error";
+        msgBox.textContent = "Hubo un problema al enviar el formulario. Intenta de nuevo.";
+      })
+      .finally(function () {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "💾 Guardar Orden de Trabajo";
+      });
+  });
+</script>
+</body>
+</html>
