@@ -304,8 +304,8 @@
 
         <div class="row3">
           <div>
-            <label>Año</label>
-            <input type="text" id="motoAnio" inputmode="numeric" placeholder="2026" maxlength="4">
+            <label>Año <span class="req">*</span></label>
+            <input type="text" id="motoAnio" inputmode="numeric" placeholder="2026" maxlength="4" required>
             <p class="error-text" id="motoAnioError">Faltan datos</p>
           </div>
           <div>
@@ -313,19 +313,21 @@
             <input type="text" id="motoPlaca" placeholder="PBA-1234" maxlength="10" required>
           </div>
           <div>
-            <label>Km Ingreso</label>
-            <input type="text" id="motoKm" inputmode="numeric" placeholder="45000" maxlength="6">
+            <label>Km Ingreso <span class="req">*</span></label>
+            <input type="text" id="motoKm" inputmode="numeric" placeholder="45000" maxlength="6" required>
             <p class="error-text" id="motoKmError">Kilometraje inválido</p>
           </div>
         </div>
 
-        <label>Chasis / VIN</label>
-        <input type="text" id="motoChasis" placeholder="Ej. MBLKCR013VGN00164" maxlength="17">
+        <label>Chasis / VIN <span class="req">*</span></label>
+        <input type="text" id="motoChasis" placeholder="Ej. MBLKCR013VGN00164" maxlength="17" required>
         <p class="hint">17 caracteres exactos.</p>
+        <p class="error-text" id="motoChasisError">Faltan datos</p>
 
-        <label>Motor</label>
-        <input type="text" id="motoMotor" placeholder="Ej. KC10EHTGC00081" maxlength="14">
+        <label>Motor <span class="req">*</span></label>
+        <input type="text" id="motoMotor" placeholder="Ej. KC10EHTGC00081" maxlength="14" required>
         <p class="hint">14 caracteres exactos.</p>
+        <p class="error-text" id="motoMotorError">Faltan datos</p>
       </div>
 
       <div class="nav-row">
@@ -662,13 +664,17 @@
 
   /* ======= CHASIS Y MOTOR (mayúsculas automáticas, solo letras y números) ======= */
 
-  function soloAlfanumericoMayus(el, maxLen) {
+  function soloAlfanumericoMayus(el, maxLen, errorEl) {
     el.addEventListener("input", function () {
       el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, maxLen);
+      if (errorEl) {
+        const len = el.value.length;
+        errorEl.classList.toggle("show", len > 0 && len < maxLen);
+      }
     });
   }
-  soloAlfanumericoMayus(document.getElementById("motoChasis"), 17);
-  soloAlfanumericoMayus(document.getElementById("motoMotor"), 14);
+  soloAlfanumericoMayus(document.getElementById("motoChasis"), 17, document.getElementById("motoChasisError"));
+  soloAlfanumericoMayus(document.getElementById("motoMotor"), 14, document.getElementById("motoMotorError"));
 
   /* ======= KILOMETRAJE DE INGRESO (solo números, sin negativos ni absurdos) ======= */
 
@@ -702,7 +708,7 @@
   }
 
   function validatePage1() {
-    const required = ["centro", "numeroOT", "clienteNombre", "clienteCedula", "clienteTelefono", "clienteDireccion", "motoModelo", "motoPlaca"];
+    const required = ["centro", "numeroOT", "clienteNombre", "clienteCedula", "clienteTelefono", "clienteDireccion", "motoModelo", "motoPlaca", "motoAnio", "motoKm", "motoChasis", "motoMotor"];
     for (const id of required) {
       const el = document.getElementById(id);
       if (!el.value) {
