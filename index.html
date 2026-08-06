@@ -99,6 +99,8 @@
   }
   label .req { color: var(--red); }
   .hint { color: var(--muted); font-size: 0.78rem; margin-top: -2px; margin-bottom: 6px; }
+  .error-text { color: var(--red); font-size: 0.78rem; margin-top: 4px; margin-bottom: 0; display: none; }
+  .error-text.show { display: block; }
 
   input, select, textarea {
     width: 100%;
@@ -121,6 +123,33 @@
 
   .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+  .searchable-select { position: relative; }
+  .dropdown-list {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    z-index: 50;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .dropdown-list.show { display: block; }
+  .dropdown-item {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+  }
+  .dropdown-item:last-child { border-bottom: none; }
+  .dropdown-item:hover, .dropdown-item.highlight { background: var(--red); color: white; }
+  .dropdown-item.dropdown-empty { color: var(--muted); cursor: default; }
+  .dropdown-item.dropdown-empty:hover { background: none; color: var(--muted); }
 
   .fuel-options { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
   .fuel-btn {
@@ -225,11 +254,15 @@
       <div class="card">
         <h2>🏢 Centro y Orden <span class="req">*</span></h2>
         <label>Centro de Servicio Autorizado <span class="req">*</span></label>
-        <select id="centro" required></select>
+        <div class="searchable-select" id="centroWrap">
+          <input type="text" id="centroSearch" autocomplete="off" placeholder="Buscar centro de servicio...">
+          <input type="hidden" id="centro">
+          <div class="dropdown-list" id="centroDropdown"></div>
+        </div>
 
         <label>Número de Orden de Trabajo <span class="req">*</span></label>
         <input type="text" id="numeroOT" required>
-        <p class="hint">Generado automáticamente. Puedes editarlo si tu taller usa otro formato.</p>
+        <p class="hint">Ingresar número de orden de trabajo del block de Órdenes de Trabajo Físico.</p>
       </div>
 
       <div class="card">
@@ -240,7 +273,8 @@
         <div class="row2">
           <div>
             <label>Cédula o RUC <span class="req">*</span></label>
-            <input type="text" id="clienteCedula" placeholder="1712345678" required>
+            <input type="text" id="clienteCedula" inputmode="numeric" placeholder="1710034065" maxlength="13" required>
+            <p class="error-text" id="clienteCedulaError">Cédula o RUC inválido</p>
           </div>
           <div>
             <label>Teléfono (WhatsApp) <span class="req">*</span></label>
@@ -271,20 +305,27 @@
         <div class="row3">
           <div>
             <label>Año</label>
-            <input type="number" id="motoAnio" placeholder="2026">
+            <input type="text" id="motoAnio" inputmode="numeric" placeholder="2026" maxlength="4">
+            <p class="error-text" id="motoAnioError">Faltan datos</p>
           </div>
           <div>
             <label>Placa <span class="req">*</span></label>
-            <input type="text" id="motoPlaca" placeholder="PBA-1234" required>
+            <input type="text" id="motoPlaca" placeholder="PBA-1234" maxlength="10" required>
           </div>
           <div>
             <label>Km Ingreso</label>
-            <input type="number" id="motoKm" placeholder="45000">
+            <input type="text" id="motoKm" inputmode="numeric" placeholder="45000" maxlength="6">
+            <p class="error-text" id="motoKmError">Kilometraje inválido</p>
           </div>
         </div>
 
         <label>Chasis / VIN</label>
-        <input type="text" id="motoChasis" placeholder="N° chasis / motor">
+        <input type="text" id="motoChasis" placeholder="Ej. MBLKCR013VGN00164" maxlength="17">
+        <p class="hint">17 caracteres exactos.</p>
+
+        <label>Motor</label>
+        <input type="text" id="motoMotor" placeholder="Ej. KC10EHTGC00081" maxlength="14">
+        <p class="hint">14 caracteres exactos.</p>
       </div>
 
       <div class="nav-row">
@@ -323,11 +364,17 @@
     <!-- PÁGINA 3 -->
     <section class="page" id="page-3">
       <div class="card">
-        <h2>📝 Detalle Mantenimiento Solicitado <span class="req">*</span></h2>
+        <h2>📝 Detalle Trabajo Solicitado <span class="req">*</span></h2>
         <select id="mantenimientoTipo" required></select>
 
         <label>Observaciones de Trabajo</label>
         <textarea id="observaciones" placeholder="Novedades, diagnóstico, repuestos usados..."></textarea>
+
+        <label>Factura Cliente Garantía</label>
+        <p class="hint">Si el detalle de trabajo solicitado es Garantía, adjuntar imagen de factura de la motocicleta.</p>
+        <label class="photo-drop" for="facturaInput">➕ Tocar para elegir imagen de la galería</label>
+        <input type="file" id="facturaInput" accept="image/*" style="display:none">
+        <div class="thumbs" id="facturaThumb"></div>
       </div>
 
       <div class="card">
@@ -359,20 +406,54 @@
   // 1) Pega aquí la URL de tu Web App de Google Apps Script (ver GUIA_DESPLIEGUE.md)
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfVBw-Ypug0Zh2mv_vjrKBDSWSysd58nsfZ2ajOjOeQ5OecxYkuXsN0bpcJ-AHGWSWjg/exec";
 
-  // 2) TODO: reemplazar con la lista real de centros de servicio autorizados
+  // 2) Lista real de centros de servicio autorizados
   const CENTROS_SERVICIO = [
-    "Centro Norte",
-    "Centro Sur",
-    "Centro Valle"
+    "ROCKET MOTORSPORT",
+    "CLINICA DE MOTOS BERREZUETA",
+    "TECNIMOTOS 101",
+    "IRON HORSE",
+    "PATSMOTOS",
+    "CARRERA MOTOS",
+    "MOTO HELL",
+    "MOTO SERVICE",
+    "RIDDER",
+    "LANDMOTORS",
+    "MOTOFAST",
+    "TECNIMOTOS JEFFERSON",
+    "SERVICIO TECNICO HERO AMERICAS",
+    "MOTOS XTREME",
+    "DON FAX",
+    "COMERCIAL FRANCISCO",
+    "THE DOCTOR FELIX",
+    "TALLER POLLITO RACING",
+    "TALLER DE MOTOS CASANOVA",
+    "NG",
+    "MOTO-PEN",
+    "TALLER DE MOTOS EL GATO",
+    "TALLER MOTOS VÉLEZ",
+    "ADRIAN CARRILLO",
+    "TALLER DE MOTOS JOSÉ MORETA",
+    "VALDIVIESO MOTORS",
+    "ALMACEN Y TALLER MOTOJAPONESA",
+    "ALMACEN MOTOPARTS",
+    "TECNIMOTOS ESMERALDAS",
+    "TECNICO TALLER GAS MONKEY",
+    "SERVICIO TECNICO YAMAHA MOTOS",
+    "TALLER DE MOTOS LUCHO"
   ];
 
-  // 3) TODO: reemplazar con la lista real de modelos Hero
+  // 3) Lista real de modelos Hero
   const MODELOS_HERO = [
-    "Hunk 150",
-    "Splendor Plus",
-    "Glamour 125",
-    "Xtreme 160R",
-    "Karizma XMR"
+    "ECO DELUXE",
+    "ECO 150",
+    "HUNK 125",
+    "HUNK 160",
+    "HUNK 250",
+    "XOOM 110",
+    "XOOM 125",
+    "XPULSE 200",
+    "XPULS 200 RALLY",
+    "OTROS MODELOS"
   ];
 
   const TIPOS_MANTENIMIENTO = [
@@ -408,19 +489,198 @@
     });
   }
 
-  fillSelect("centro", CENTROS_SERVICIO, "Selecciona un centro de servicio");
   fillSelect("motoModelo", MODELOS_HERO, "Selecciona el modelo");
   fillSelect("mantenimientoTipo", TIPOS_MANTENIMIENTO, "Selecciona el tipo de mantenimiento");
 
-  // Número de OT autogenerado (editable)
-  (function generarNumeroOT() {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
-    const rand = String(Math.floor(Math.random() * 9000) + 1000);
-    document.getElementById("numeroOT").value = "OT-" + yyyy + mm + dd + "-" + rand;
-  })();
+  /* ======= SELECT CON BÚSQUEDA (Centro de Servicio) ======= */
+
+  function normalizar(texto) {
+    return (texto || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // quita tildes para que la busqueda las ignore
+  }
+
+  function setupSearchableSelect(searchId, hiddenId, dropdownId, options) {
+    const searchEl = document.getElementById(searchId);
+    const hiddenEl = document.getElementById(hiddenId);
+    const dropdownEl = document.getElementById(dropdownId);
+
+    function renderOptions(filterText) {
+      const filtro = normalizar(filterText);
+      const filtrados = options.filter(function (opt) { return normalizar(opt).includes(filtro); });
+      dropdownEl.innerHTML = "";
+      if (filtrados.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "dropdown-item dropdown-empty";
+        empty.textContent = "Sin resultados";
+        dropdownEl.appendChild(empty);
+        return;
+      }
+      filtrados.forEach(function (opt) {
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+        item.textContent = opt;
+        item.addEventListener("click", function () {
+          hiddenEl.value = opt;
+          searchEl.value = opt;
+          dropdownEl.classList.remove("show");
+        });
+        dropdownEl.appendChild(item);
+      });
+    }
+
+    searchEl.addEventListener("focus", function () {
+      renderOptions(searchEl.value);
+      dropdownEl.classList.add("show");
+    });
+
+    searchEl.addEventListener("input", function () {
+      hiddenEl.value = "";
+      renderOptions(searchEl.value);
+      dropdownEl.classList.add("show");
+    });
+
+    document.addEventListener("click", function (e) {
+      if (searchEl.contains(e.target) || dropdownEl.contains(e.target)) return;
+      dropdownEl.classList.remove("show");
+      if (!hiddenEl.value) searchEl.value = "";
+    });
+
+    // Se guarda para poder reiniciarlo tras enviar el formulario
+    dropdownEl._reset = function () {
+      searchEl.value = "";
+      hiddenEl.value = "";
+      dropdownEl.classList.remove("show");
+    };
+  }
+
+  setupSearchableSelect("centroSearch", "centro", "centroDropdown", CENTROS_SERVICIO);
+
+  /* ======= AÑO DE LA MOTO (solo números, exactamente 4 dígitos) ======= */
+
+  const motoAnioEl = document.getElementById("motoAnio");
+  const motoAnioErrorEl = document.getElementById("motoAnioError");
+
+  motoAnioEl.addEventListener("input", function () {
+    // Solo dígitos, máximo 4 caracteres
+    motoAnioEl.value = motoAnioEl.value.replace(/\D/g, "").slice(0, 4);
+    const len = motoAnioEl.value.length;
+    motoAnioErrorEl.classList.toggle("show", len > 0 && len < 4);
+  });
+
+  /* ======= CÉDULA / RUC (Ecuador, con dígito verificador) ======= */
+
+  function validarCedulaEC(cedula) {
+    if (!/^\d{10}$/.test(cedula)) return false;
+    const provincia = parseInt(cedula.substring(0, 2), 10);
+    if (provincia < 1 || provincia > 24) return false;
+    const tercerDigito = parseInt(cedula[2], 10);
+    if (tercerDigito > 5) return false;
+    const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
+    let suma = 0;
+    for (let i = 0; i < 9; i++) {
+      let val = parseInt(cedula[i], 10) * coeficientes[i];
+      if (val >= 10) val -= 9;
+      suma += val;
+    }
+    const verificador = (10 - (suma % 10)) % 10;
+    return verificador === parseInt(cedula[9], 10);
+  }
+
+  function validarRucEC(ruc) {
+    if (!/^\d{13}$/.test(ruc)) return false;
+    const provincia = parseInt(ruc.substring(0, 2), 10);
+    if (provincia < 1 || provincia > 24) return false;
+    const establecimiento = parseInt(ruc.substring(10, 13), 10);
+    if (establecimiento < 1) return false;
+    const tercerDigito = parseInt(ruc[2], 10);
+
+    if (tercerDigito >= 0 && tercerDigito <= 5) {
+      // Persona natural: los primeros 10 dígitos deben ser una cédula válida
+      return validarCedulaEC(ruc.substring(0, 10));
+    } else if (tercerDigito === 9) {
+      // Sociedad privada
+      const coeficientes = [4, 3, 2, 7, 6, 5, 4, 3, 2];
+      let suma = 0;
+      for (let i = 0; i < 9; i++) suma += parseInt(ruc[i], 10) * coeficientes[i];
+      const resto = suma % 11;
+      const verificador = resto === 0 ? 0 : 11 - resto;
+      return verificador === parseInt(ruc[9], 10);
+    } else if (tercerDigito === 6) {
+      // Sector público
+      const coeficientes = [3, 2, 7, 6, 5, 4, 3, 2];
+      let suma = 0;
+      for (let i = 0; i < 8; i++) suma += parseInt(ruc[i], 10) * coeficientes[i];
+      const resto = suma % 11;
+      const verificador = resto === 0 ? 0 : 11 - resto;
+      return verificador === parseInt(ruc[8], 10);
+    }
+    return false;
+  }
+
+  function cedulaORucValida(valor) {
+    if (valor.length === 10) return validarCedulaEC(valor);
+    if (valor.length === 13) return validarRucEC(valor);
+    return false;
+  }
+
+  const clienteCedulaEl = document.getElementById("clienteCedula");
+  const clienteCedulaErrorEl = document.getElementById("clienteCedulaError");
+
+  clienteCedulaEl.addEventListener("input", function () {
+    clienteCedulaEl.value = clienteCedulaEl.value.replace(/\D/g, "").slice(0, 13);
+    const val = clienteCedulaEl.value;
+    const completa = val.length === 10 || val.length === 13;
+    clienteCedulaErrorEl.classList.toggle("show", completa && !cedulaORucValida(val));
+  });
+
+  /* ======= PLACA (mayúsculas automáticas, sin espacios) ======= */
+
+  const motoPlacaEl = document.getElementById("motoPlaca");
+  motoPlacaEl.addEventListener("input", function () {
+    const pos = motoPlacaEl.selectionStart;
+    const antes = motoPlacaEl.value.length;
+    motoPlacaEl.value = motoPlacaEl.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+    const despues = motoPlacaEl.value.length;
+    const nuevaPos = Math.max(0, pos - (antes - despues));
+    motoPlacaEl.setSelectionRange(nuevaPos, nuevaPos);
+  });
+
+  /* ======= MAYÚSCULAS AUTOMÁTICAS EN CAMPOS DE TEXTO (evita duplicados por mayús/minús) ======= */
+
+  function forzarMayusculas(el) {
+    el.addEventListener("input", function () {
+      const inicio = el.selectionStart;
+      const fin = el.selectionEnd;
+      el.value = el.value.toUpperCase();
+      el.setSelectionRange(inicio, fin);
+    });
+  }
+  forzarMayusculas(document.getElementById("clienteNombre"));
+  forzarMayusculas(document.getElementById("clienteDireccion"));
+
+  /* ======= CHASIS Y MOTOR (mayúsculas automáticas, solo letras y números) ======= */
+
+  function soloAlfanumericoMayus(el, maxLen) {
+    el.addEventListener("input", function () {
+      el.value = el.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, maxLen);
+    });
+  }
+  soloAlfanumericoMayus(document.getElementById("motoChasis"), 17);
+  soloAlfanumericoMayus(document.getElementById("motoMotor"), 14);
+
+  /* ======= KILOMETRAJE DE INGRESO (solo números, sin negativos ni absurdos) ======= */
+
+  const motoKmEl = document.getElementById("motoKm");
+  const motoKmErrorEl = document.getElementById("motoKmError");
+  const MAX_KM = 999999;
+
+  motoKmEl.addEventListener("input", function () {
+    motoKmEl.value = motoKmEl.value.replace(/\D/g, "").slice(0, 6);
+    const num = parseInt(motoKmEl.value, 10);
+    motoKmErrorEl.classList.toggle("show", motoKmEl.value.length > 0 && (isNaN(num) || num > MAX_KM));
+  });
 
   /* ======= NAVEGACIÓN ENTRE PÁGINAS ======= */
 
@@ -451,6 +711,42 @@
         return false;
       }
     }
+
+    const cedulaEl = document.getElementById("clienteCedula");
+    if (!cedulaORucValida(cedulaEl.value)) {
+      alert("La cédula o RUC ingresado no es válido. Verifícalo antes de continuar.");
+      cedulaEl.focus();
+      return false;
+    }
+
+    const anioEl = document.getElementById("motoAnio");
+    if (anioEl.value && anioEl.value.length !== 4) {
+      alert("El año debe tener exactamente 4 dígitos.");
+      anioEl.focus();
+      return false;
+    }
+
+    const kmEl = document.getElementById("motoKm");
+    if (kmEl.value && (isNaN(parseInt(kmEl.value, 10)) || parseInt(kmEl.value, 10) > 999999)) {
+      alert("El kilometraje ingresado no es válido.");
+      kmEl.focus();
+      return false;
+    }
+
+    const chasisEl = document.getElementById("motoChasis");
+    if (chasisEl.value && chasisEl.value.trim().length !== 17) {
+      alert("El chasis debe tener exactamente 17 caracteres (ej. MBLKCR013VGN00164).");
+      chasisEl.focus();
+      return false;
+    }
+
+    const motorEl = document.getElementById("motoMotor");
+    if (motorEl.value && motorEl.value.trim().length !== 14) {
+      alert("El motor debe tener exactamente 14 caracteres (ej. KC10EHTGC00081).");
+      motorEl.focus();
+      return false;
+    }
+
     return true;
   }
 
@@ -532,6 +828,40 @@
     e.target.value = "";
   });
 
+  /* ======= FOTO DE FACTURA (garantía) ======= */
+
+  let facturaBase64 = ""; // solo una imagen
+
+  function renderFacturaThumb() {
+    const box = document.getElementById("facturaThumb");
+    box.innerHTML = "";
+    if (!facturaBase64) return;
+    const div = document.createElement("div");
+    div.className = "thumb";
+    const img = document.createElement("img");
+    img.src = facturaBase64;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "✕";
+    btn.onclick = function () {
+      facturaBase64 = "";
+      renderFacturaThumb();
+    };
+    div.appendChild(img);
+    div.appendChild(btn);
+    box.appendChild(div);
+  }
+
+  document.getElementById("facturaInput").addEventListener("change", function (e) {
+    const file = (e.target.files || [])[0];
+    if (!file) return;
+    resizeAndEncode(file).then(function (b64) {
+      facturaBase64 = b64;
+      renderFacturaThumb();
+    });
+    e.target.value = "";
+  });
+
   /* ======= FIRMA (canvas táctil) ======= */
 
   const sigCanvas = document.getElementById("sigPad");
@@ -603,8 +933,13 @@
     msgBox.className = "msg";
     msgBox.textContent = "";
 
-    if (!document.getElementById("mantenimientoTipo").value) {
-      alert("Selecciona el tipo de mantenimiento solicitado.");
+    const tipoTrabajo = document.getElementById("mantenimientoTipo").value;
+    if (!tipoTrabajo) {
+      alert("Selecciona el detalle de trabajo solicitado.");
+      return;
+    }
+    if (tipoTrabajo === "Garantía" && !facturaBase64) {
+      alert("El trabajo solicitado es Garantía: adjunta la imagen de la factura de la motocicleta.");
       return;
     }
     if (!sigHasContent) {
@@ -638,8 +973,9 @@
     data.append("motoPlaca", document.getElementById("motoPlaca").value);
     data.append("motoKm", document.getElementById("motoKm").value);
     data.append("motoChasis", document.getElementById("motoChasis").value);
+    data.append("motoMotor", document.getElementById("motoMotor").value);
     data.append("combustible", document.getElementById("combustible").value);
-    data.append("mantenimientoTipo", document.getElementById("mantenimientoTipo").value);
+    data.append("mantenimientoTipo", tipoTrabajo);
     data.append("observaciones", document.getElementById("observaciones").value);
 
     fotosBase64.forEach(function (foto, idx) {
@@ -648,6 +984,7 @@
     });
     data.append("totalFotos", String(fotosBase64.length));
     data.append("firma_base64", sigCanvas.toDataURL("image/png"));
+    data.append("factura_base64", facturaBase64);
 
     fetch(SCRIPT_URL, {
       method: "POST",
@@ -660,8 +997,10 @@
         form.reset();
         fotosBase64 = [];
         renderThumbs();
+        facturaBase64 = "";
+        renderFacturaThumb();
         clearSignature();
-        fillSelect("centro", CENTROS_SERVICIO, "Selecciona un centro de servicio");
+        document.getElementById("centroDropdown")._reset();
         fillSelect("motoModelo", MODELOS_HERO, "Selecciona el modelo");
         fillSelect("mantenimientoTipo", TIPOS_MANTENIMIENTO, "Selecciona el tipo de mantenimiento");
         document.getElementById("motoMarca").value = "Hero";
